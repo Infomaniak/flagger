@@ -354,8 +354,8 @@ type CanaryWebhookPayload struct {
 	// Metadata (key-value pairs) for this webhook
 	Metadata map[string]string `json:"metadata,omitempty"`
 
-	// Text contains the payload of webhook
-	Text string `json:"text",omitempty`
+	// Attachments Slack payload attachments
+	Attachments []SlackAttachments `json:"attachments,omitempty"`
 }
 
 // CrossNamespaceObjectReference contains enough information to let you locate the
@@ -375,6 +375,17 @@ type CrossNamespaceObjectReference struct {
 	// Namespace of the referent
 	// +optional
 	Namespace string `json:"namespace,omitempty"`
+}
+
+type SlackAttachments struct {
+	Color  string       `json:"color"`
+	Blocks []SlackBlock `json:"blocks"`
+}
+
+type SlackBlock struct {
+	Type   string              `json:"type"`
+	Text   map[string]string   `json:"text,omitempty"`
+	Fields []map[string]string `json:"fields,omitempty"`
 }
 
 // CustomMetadata holds labels and annotations to set on generated objects.

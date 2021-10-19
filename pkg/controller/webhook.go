@@ -23,9 +23,9 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	corev1 "k8s.io/api/core/v1"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -101,17 +101,11 @@ func CallWebhook(name string, namespace string, phase flaggerv1.CanaryPhase, w f
 }
 
 func CallEventWebhook(r *flaggerv1.Canary, w flaggerv1.CanaryWebhook, message, eventtype string) error {
-	t := time.Now()
-
 	payload := flaggerv1.CanaryWebhookPayload{
 		Name:      r.Name,
 		Namespace: r.Namespace,
 		Phase:     r.Status.Phase,
-		Metadata: map[string]string{
-			"eventMessage": message,
-			"eventType":    eventtype,
-			"timestamp":    strconv.FormatInt(t.UnixNano()/1000000, 10),
-		},
+		Metadata: map[string]string{},
 	}
 
 	if w.Metadata != nil {
@@ -124,11 +118,38 @@ func CallEventWebhook(r *flaggerv1.Canary, w flaggerv1.CanaryWebhook, message, e
 	}
 	//Text field is the required one for slack payload
 	if strings.Contains(w.URL, "slack") {
-		var metadata string
-		for key, value := range payload.Metadata {
-			metadata += fmt.Sprintf("\n%10s%s=%s", "", key, value)
+		var fields = []map[string]string{
+			{"type": "mrkdwn", "text": fmt.Sprintf("*Namespace*:\n%s", r.Namespace)},
+			{"type": "mrkdwn", "text": fmt.Sprintf("*Phase*:\n%s", r.Status.Phase)},
+			{"type": "mrkdwn", "text": fmt.Sprintf("*Type*:\n%s", eventtype)},
 		}
-		payload.Text = fmt.Sprintf("Name=%s\nNamespace=%s\nPhase=%s\nMetadata:%s\n", r.Name, r.Namespace, r.Status.Phase, metadata)
+
+		for key, value := range payload.Metadata {
+			fields = append(fields, map[string]string{
+				"type": "mrkdwn", "text": fmt.Sprintf("*%s*:\n%s", strings.Title(key), value),
+			})
+		}
+
+		color := "#36a64f"
+		if eventtype != corev1.EventTypeNormal {
+			color = "#FF0000"
+		}
+
+		payload.Attachments = []flaggerv1.SlackAttachments{
+			{
+				Color: color,
+				Blocks: []flaggerv1.SlackBlock{
+					{
+						Type: "section",
+						Text: map[string]string{"type": "mrkdwn", "text": fmt.Sprintf("*%s*", message)},
+					},
+					{
+						Type:   "section",
+						Fields: fields,
+					},
+				},
+			},
+		}
 	}
 
 	return callWebhook(w.URL, payload, "5s")
