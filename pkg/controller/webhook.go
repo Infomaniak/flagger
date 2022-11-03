@@ -105,7 +105,7 @@ func CallEventWebhook(r *flaggerv1.Canary, w flaggerv1.CanaryWebhook, message, e
 		Name:      r.Name,
 		Namespace: r.Namespace,
 		Phase:     r.Status.Phase,
-		Metadata: map[string]string{},
+		Metadata:  map[string]string{},
 	}
 
 	if w.Metadata != nil {
@@ -119,14 +119,14 @@ func CallEventWebhook(r *flaggerv1.Canary, w flaggerv1.CanaryWebhook, message, e
 	//Text field is the required one for slack payload
 	if strings.Contains(w.URL, "slack") {
 		var fields = []map[string]string{
-			{"type": "mrkdwn", "text": fmt.Sprintf("*Namespace*:\n%s", r.Namespace)},
-			{"type": "mrkdwn", "text": fmt.Sprintf("*Phase*:\n%s", r.Status.Phase)},
-			{"type": "mrkdwn", "text": fmt.Sprintf("*Type*:\n%s", eventtype)},
+			{"title": "Namespace:", "value": r.Namespace},
+			{"title": "Phase:", "value": string(r.Status.Phase)},
+			{"title": "Type:", "value": eventtype},
 		}
 
 		for key, value := range payload.Metadata {
 			fields = append(fields, map[string]string{
-				"type": "mrkdwn", "text": fmt.Sprintf("*%s*:\n%s", strings.Title(key), value),
+				"title": fmt.Sprintf("%s:", strings.Title(key)), "value": value,
 			})
 		}
 
@@ -137,17 +137,10 @@ func CallEventWebhook(r *flaggerv1.Canary, w flaggerv1.CanaryWebhook, message, e
 
 		payload.Attachments = []flaggerv1.SlackAttachments{
 			{
-				Color: color,
-				Blocks: []flaggerv1.SlackBlock{
-					{
-						Type: "section",
-						Text: map[string]string{"type": "mrkdwn", "text": fmt.Sprintf("*%s*", message)},
-					},
-					{
-						Type:   "section",
-						Fields: fields,
-					},
-				},
+				Color:    color,
+				Text:     fmt.Sprintf("**%s**", message),
+				Fallback: message,
+				Fields:   fields,
 			},
 		}
 	}

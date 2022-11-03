@@ -378,8 +378,15 @@ type CrossNamespaceObjectReference struct {
 }
 
 type SlackAttachments struct {
-	Color  string       `json:"color"`
-	Blocks []SlackBlock `json:"blocks"`
+	Color    string              `json:"color"`
+	Text     string              `json:"text"`
+	Fallback string              `json:"fallback"`
+	Fields   []map[string]string `json:"fields"`
+}
+
+type SlackFields struct {
+	Title string `json:"title"`
+	Value string `json:"value"`
 }
 
 type SlackBlock struct {
