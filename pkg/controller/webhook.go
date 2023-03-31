@@ -118,6 +118,8 @@ func CallEventWebhook(r *flaggerv1.Canary, w flaggerv1.CanaryWebhook, message, e
 	}
 	//Text field is the required one for slack payload
 	if strings.Contains(w.URL, "slack") || strings.Contains(w.URL, "infomaniak") {
+		payload.Metadata = map[string]string{}
+
 		var fields = []map[string]string{
 			{"title": "Namespace:", "value": r.Namespace},
 			{"title": "Phase:", "value": string(r.Status.Phase)},
